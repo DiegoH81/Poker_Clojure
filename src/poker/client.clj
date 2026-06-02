@@ -3,11 +3,17 @@
            [java.net URI]
            [java.util.concurrent CompletableFuture]))
 
+(def buffer (StringBuilder.))
+
 (def listener
-  (reify WebSocket$Listener
-    (onText [this ws data last]
-      (println "Recibido:" (str data))
-      (CompletableFuture/completedFuture nil))))
+   (reify WebSocket$Listener
+     (onText [this ws data last]
+       (.append buffer data)
+       (when last
+         (println "Received:" (str buffer))
+         (.setLength buffer 0))
+       (.request ws 1)
+       (CompletableFuture/completedFuture nil))))
 
 (defn -main [& args]
   (let [client (HttpClient/newHttpClient)
@@ -17,11 +23,10 @@
                (.join))]
     
     (loop []
-      (println "Introduzca un mensaje a enviar, o salir para terminar")
+      (println "Enter msg, exit to close:")
       (let [msg (read-line)]
-        (when (not= msg "salir")
+        (when (not= msg "exit")
           (.sendText ws msg true)
-          (Thread/sleep 5000)
           (recur)
           )))
     
