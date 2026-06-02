@@ -64,3 +64,43 @@
     (println "¡Bucle terminado!")))
 
 
+(doseq [i (range 6 1 -1)]
+  (println "HOLA: " i))
+
+
+
+(loop [i 1]
+  (if (<= i 5)
+    (
+     do 
+      (println "HOLaweis " i)
+      (recur (inc i))
+    )
+    (println "FIN BUCLE")
+  )
+)
+
+
+(defn es_mayor [edad]
+  (if (>= edad 10)
+    true
+    false)
+)
+
+(println (es_mayor 01))
+
+
+
+(def cuenta (atom 0))
+
+@cuenta
+
+
+(swap! cuenta inc)
+(swap! cuenta + 10)
+@cuenta
+
+(def nombre "Diego")
+(def chips-iniciales 100)
+
+nombre
