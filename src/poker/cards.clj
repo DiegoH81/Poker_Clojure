@@ -1,4 +1,4 @@
-(ns test.cards)
+(ns cards)
 
 (def game-cards
   [
