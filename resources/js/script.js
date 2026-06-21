@@ -88,13 +88,39 @@ const BOTON_IMG = {
     'Subir':  'assets/boton_apostar.png',
     'Igualar':'assets/boton_igualar.png',
     'Pasar':  'assets/boton_pasar.png',
-    'Retirar':'assets/boton_retirar.png',
+    'Retirarse':'assets/boton_retirar.png',
 };
 
 
 // Render
 function renderEstado(data)
 {
+    const esperandoDiv = document.getElementById('esperando-overlay');
+    if (data.esperando)
+    {
+        esperandoDiv.style.display = 'flex';
+        esperandoDiv.querySelector('.esperando-texto').textContent = data.mensaje;
+        return;
+    }
+    else
+    {
+        esperandoDiv.style.display = 'none';
+    }
+
+    const ganadorDiv = document.getElementById('ganador-overlay');
+    if (data.ganador)
+    {
+        ganadorDiv.style.display = 'flex';
+        ganadorDiv.querySelector('.ganador-texto').textContent =
+            data.ganador.tipo === 'abandono'
+              ? `${data.ganador.nombre} gana $${data.ganador.pozo} (todos se retiraron)`
+              : `${data.ganador.nombre} gana $${data.ganador.pozo} con ${data.ganador.jugada}`;
+    }
+    else
+    {
+        ganadorDiv.style.display = 'none';
+    }
+
     const yo = data.jugadores.find(j => j.id === data.jugador_id_actual);
 
     const rivales = data.jugadores.filter(j => j.id !== data.jugador_id_actual);
@@ -191,30 +217,17 @@ async function enviarAccion(accion)
   await fetch(`/api/decision?accion=${encodeURIComponent(accion)}&valor=${v}`);
 }
 
-
-const PRUEBA =
-{
-  jugador_id_actual: 1,
-  turno_id: 1,
-  jugadores: [
-    { id:1, nombre:"Diego",  dinero:1250, cartas:["Ah","Kh"] },
-    { id:2, nombre:"Carlos", dinero:800,  cartas:["back","back"] },
-    { id:3, nombre:"María",  dinero:2100, cartas:["back","back"] },
-    { id:4, nombre:"Luis",   dinero:450,  cartas:["back","back"] },
-  ],
-  mesa: { pot:600, cartas:["10h","Jh","Qh"] },
-  opciones: ["Igualar","Apostar","Retirar"]
-};
-
 async function iniciar()
 {
     try
     {
         const resp = await fetch('/api/messages');
-        if (!resp.ok) throw new Error();
+        if (!resp.ok)
+            throw new Error();
         renderEstado(await resp.json());
         setInterval(actualizar, 1000);
-    } catch(_)
+    }
+    catch(_)
     {
         console.info('Sin servidor -> datos de prueba');
         renderEstado(PRUEBA);

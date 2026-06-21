@@ -1,57 +1,91 @@
 (ns poker.server
-  (:require [org.httpkit.server :as hk-server]
-            [clojure.data.json :as json]))
+  (:require [poker.logicaApuestas :as apuestas]
+            [poker.cards :as cartas]
+            [poker.evaluator :as eval]
+            [poker.pokerPrincipal :as motor]
+            [org.httpkit.server :as hk-server]
+            [clojure.data.json :as json]
+            [poker.utils :as utils]))
 
 (def active_clients (atom {}))
 
-(def game-state (atom {:mesa {:cartas [] :pot 0}
-                       :jugadores []
-                       :turno_id 0
-                       :opciones ["Retirar" "Pasar" "Apostar" "Igualar"]}))
+(def mesa-ag (agent {:players []
+                     :pot 0
+                     :community-cards []
+                     :turn 0
+                     :current-bet 0
+                     :ronda 0
+                     :armada? false
+                     :ganador nil}))
+
+(def rank-str {2 "2" 3 "3" 4 "4" 5 "5" 6 "6" 7 "7" 8 "8" 9 "9"
+               10 "10" 11 "J" 12 "Q" 13 "K" 14 "A"})
+(def tipo-str {:corazones "h" :diamantes "d" :treboles "c" :picas "s"})
+
+(defn carta-str [c] (str (rank-str (:rank c)) (tipo-str (:tipo c))))
+
+(defn jugador-json [j viewer-id]
+  {:id (:id @j)
+   :nombre (:name @j)
+   :dinero (:money @j)
+   :cartas (if (= (:id @j) viewer-id)
+             (mapv carta-str (:hand @j))
+             (vec (repeat (count (:hand @j)) "back")))})
+
+(defn estado-json [viewer-id]
+  (if (not (:armada? @mesa-ag))
+    {:jugador_id_actual viewer-id
+     :esperando true
+     :mensaje (str "Esperando jugadores (" (count (:players @mesa-ag)) "/4)")}
+    (let [players (:players @mesa-ag)
+          jugador-actual (nth players (:turn @mesa-ag))]
+      {:jugador_id_actual viewer-id
+       :turno_id (:id @jugador-actual)
+       :jugadores (mapv #(jugador-json % viewer-id) players)
+       :mesa {:pot (:pot @mesa-ag)
+              :cartas (mapv carta-str (:community-cards @mesa-ag))}
+       :opciones (if (= viewer-id (:id @jugador-actual))
+                   (motor/obtener-opciones jugador-actual mesa-ag)
+                   [])
+       :ganador (:ganador @mesa-ag)})))
+
+(defn broadcast-estado []
+  (doseq [[socket id] @active_clients]
+    (hk-server/send! socket (json/write-str (estado-json id)))))
+
+(defn agregar-jugador-a-mesa [estado nombre id]
+  (update estado :players conj (apuestas/crear-jugador nombre id)))
 
 
-(defn register_client [socket]
-  (let [new_id (count @active_clients)]
+
+(defn register_client [socket nombre]
+  (let [new_id (count (:players @mesa-ag))]
+    (send mesa-ag agregar-jugador-a-mesa nombre new_id)
+    (await mesa-ag)
     (swap! active_clients assoc socket new_id)
-    (swap! game-state (fn [state]
-                        (update state :jugadores conj {:id new_id
-                                                       :nombre (str "Jugador-" new_id)
-                                                       :dinero 1000
-                                                       :cartas []})))))
+    (println "Conectado:" nombre "(" (count (:players @mesa-ag)) "/4 )")
+    (when (= 4 (count (:players @mesa-ag)))
+      (send mesa-ag assoc :armada? true)
+      (await mesa-ag)
+      (println "¡Mesa armada!")
+      (motor/barajar-cartas-iniciales mesa-ag))))
 
 (defn delete_client [socket]
   (swap! active_clients dissoc socket)
   (println "Total clients:" (count @active_clients)))
 
-(defn get_new_turn [current_turn]
-  (let [new_turn (inc current_turn)]
-    (if (>= new_turn (count @active_clients))
-      0
-      new_turn)))
-
-(defn process_action [current_state player-id action value]
-
-  (let [new_turn (get_new_turn (:turno_id current_state))]
-
-    (cond
-      (= action "Retirarse") (println "Jugador" player-id "se retiró")
-      (= action "Pasar") (println "Jugador" player-id "pasó")
-      (= action "Apostar") (println "Jugador" player-id "apostó" value)
-
-      :else
-
-      (println "Acción desconocida"))
-
-    (assoc current_state :turno_id new_turn)))
+(defn on-mensaje-recibido [player-id action value]
+  (when (:armada? @mesa-ag)
+    (let [cantidad (when value (Integer/parseInt value))]
+      (motor/procesar-accion-jugador mesa-ag action cantidad))))
 
 (defn ws_handler [req]
   (hk-server/with-channel req channel
-    (register_client channel)
+    (let [params (utils/parse_query_string (:query-string req))
+          nombre (:nombre params)]
+      (register_client channel nombre))
 
-    (doseq [socket (keys @active_clients)]
-      (let [id-del-socket (get @active_clients socket)
-            json-especifico (json/write-str (merge @game-state {:jugador_id_actual id-del-socket}))]
-        (hk-server/send! socket json-especifico)))
+    (broadcast-estado)
 
     (hk-server/on-close channel (fn [status]
                                   (delete_client channel)))
@@ -61,16 +95,9 @@
                                           value (second parts)
                                           player-id (get @active_clients channel)]
 
+                                      (on-mensaje-recibido player-id action value)
 
-
-                                      (swap! game-state #(process_action % player-id action value))
-
-                                      (let [json-broadcast (json/write-str @game-state)]
-
-                                        (doseq [socket (keys @active_clients)]
-                                          (let [id-del-socket (get @active_clients socket)
-                                                json-especifico (json/write-str (merge @game-state {:jugador_id_actual id-del-socket}))]
-                                            (hk-server/send! socket json-especifico)))))))))
+                                      (broadcast-estado))))))
 
 (defn app [req]
   (if (= (:uri req) "/ws")
