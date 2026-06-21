@@ -1,0 +1,139 @@
+@font-face
+{
+    font-family: 'BoldPixels';
+    src: url('../assets/BoldPixels.otf') format('opentype');
+}
+
+body
+{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+
+    background: 
+        radial-gradient(circle, rgba(14, 107, 64, 0.85), rgba(4, 40, 23, 0.95)),
+        linear-gradient(135deg, #0b4126 25%, transparent 25%) -50px 0,
+        linear-gradient(225deg, #0b4126 25%, transparent 25%) -50px 0,
+        linear-gradient(45deg, #0b4126 25%, transparent 25%),
+        linear-gradient(315deg, #0b4126 25%, #06311b 25%);
+    background-size: 100% 100%, 40px 40px, 40px 40px, 40px 40px, 40px 40px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #fff;
+}
+
+.main-wrapper
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.casino-header
+{
+    text-align: center;
+    text-shadow: 0 4px 10px rgba(0, 0, 0, 0.7);
+}
+
+.poker-title
+{
+    font-family: 'BoldPixels', sans-serif;
+    font-size: 72px;
+    margin: 0;
+    color: #f4d35e;
+    letter-spacing: 6px;
+    /* Efecto de luz dorada */
+    background: linear-gradient(to bottom, #ffe893 0%, #f4d35e 50%, #c69c16 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.5));
+}
+
+.poker-subtitle
+{
+    margin: -5px 0 0 0;
+    font-size: 14px;
+    letter-spacing: 8px;
+    color: #a3e2c1;
+    font-weight: bold;
+}
+
+.login-container
+{
+    background: rgba(13, 59, 36, 0.85);
+    padding: 35px 45px;
+    border-radius: 20px;
+    border: 2px solid #1c6b44;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(255,255,255,0.05);
+    text-align: center;
+    width: 320px;
+    backdrop-filter: blur(5px);
+}
+
+.login-container h2 {
+    color: #ffffff;
+    font-size: 20px;
+    margin-bottom: 24px;
+    font-weight: 400;
+    letter-spacing: 1px;
+}
+
+#nombre-input
+{
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    border: 2px solid #1c6b44;
+    background: #072416;
+    color: #fff;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+#nombre-input:focus
+{
+    outline: none;
+    border-color: #f4d35e;
+    box-shadow: 0 0 10px rgba(244, 211, 94, 0.3);
+}
+
+#btn-entrar
+{
+    width: 100%;
+    background: linear-gradient(180deg, #f7dc76 0%, #f4d35e 100%);
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #0d3b24;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(244, 211, 94, 0.3);
+    transition: transform 0.1s ease, box-shadow 0.3s ease;
+}
+
+#btn-entrar:hover
+{
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(244, 211, 94, 0.5);
+    background: linear-gradient(180deg, #ffe587 0%, #fcdb6d 100%);
+}
+
+#btn-entrar:active
+{
+    transform: translateY(1px);
+}
+
+#login-error
+{
+    color: #ff6b6b;
+    margin-top: 14px;
+    font-size: 14px;
+    min-height: 20px;
+    font-weight: 500;
+}

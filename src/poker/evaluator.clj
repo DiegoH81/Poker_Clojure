@@ -1,4 +1,4 @@
-(ns evaluator
+(ns poker.evaluator
     (:require [clojure.math.combinatorics :as combo]))
 
 (defn is-straight [hand]

@@ -1,4 +1,4 @@
-(ns cards)
+(ns poker.cards)
 
 (def game-cards
   [
