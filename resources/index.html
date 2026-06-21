@@ -7,25 +7,36 @@
 </head>
 <body>
 
-<div id="fondo"></div>
+<div id="mesa-juego">
+    <div id="esperando-overlay" style="display:none;">
+        <p class="esperando-texto">Esperando jugadores...</p>
+    </div>
+    <div id="fondo"></div>
 
-<div id="rivales"></div>
+    <div id="rivales"></div>
 
-<div id="pot-display">POT: $<span id="pot">0</span></div>
+    <div id="ganador-overlay" style="display:none;">
+    <p class="ganador-texto"></p>
+    </div>
 
-<div id="cartas-mesa"></div>
 
-<div id="info-jugador">
-  <div id="nombre-jugador">Jugador</div>
-  <div id="dinero-jugador-display">$<span id="dinero-jugador">0</span></div>
+    <div id="pot-display">POT: $<span id="pot">0</span></div>
+
+    <div id="cartas-mesa"></div>
+
+    <div id="info-jugador">
+    <div id="nombre-jugador">Jugador</div>
+    <div id="dinero-jugador-display">$<span id="dinero-jugador">0</span></div>
+    </div>
+
+    <div id="cartas-jugador"></div>
+
+    <div id="fichas-display"></div>
+
+    <div id="acciones"></div>
+
+    <script src="js/script.js"></script>
 </div>
 
-<div id="cartas-jugador"></div>
-
-<div id="fichas-display"></div>
-
-<div id="acciones"></div>
-
-<script src="js/script.js"></script>
 </body>
 </html>

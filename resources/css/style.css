@@ -1,7 +1,7 @@
 @font-face 
 {
-  font-family: 'BoldPixels';
-  src: url('../assets/BoldPixels.otf') format('opentype');
+    font-family: 'BoldPixels';
+    src: url('../assets/BoldPixels.otf') format('opentype');
 }
 
 *
@@ -64,117 +64,129 @@ body
 
 .rival-nombre
 {
-  font-family: 'BoldPixels', monospace;
-  font-size: 50px; color: #fff;
-  text-shadow: 5px 5px 0 #000;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+    font-family: 'BoldPixels', monospace;
+    font-size: 50px; color: #fff;
+    text-shadow: 5px 5px 0 #000;
+    letter-spacing: 2px;
+    text-transform: uppercase;
 }
 
 .rival-dinero
 {
-  font-family: 'BoldPixels', monospace;
-  font-size: 38px; color: #f0d060;
-  text-shadow: 4px 4px 0 #000;
+    font-family: 'BoldPixels', monospace;
+    font-size: 38px; color: #f0d060;
+    text-shadow: 4px 4px 0 #000;
 }
 
 
-#pot-display
+.ganador-texto
 {
-  position: absolute;
-  top: 380px;
-  left: 50%;
-  transform: translateX(-50%);
+    position: absolute;
+    top: 380px;
+    width: 100%;
+    text-align: center;
+    font-family: 'BoldPixels', monospace;
+    font-size: 62px; color: #f0d060;
+    text-shadow: 5px 5px 0 #000;
+    letter-spacing: 4px;
+}
 
-  font-family: 'BoldPixels', monospace;
-  font-size: 62px; color: #f0d060;
-  text-shadow: 5px 5px 0 #000;
-  letter-spacing: 4px;
+#ganador-texto
+{
+    position: absolute;
+    top: 380px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    font-family: 'BoldPixels', monospace;
+    font-size: 62px; color: #f0d060;
+    text-shadow: 5px 5px 0 #000;
+    letter-spacing: 4px;
 }
 
 #cartas-mesa
 {
-  position: absolute;
-  top: 550px;
-  left: 50%;
-  display: flex;
-  transform: translateX(-50%);
-  scale: 150%;
-  gap: 60px;
+    position: absolute;
+    top: 550px;
+    left: 50%;
+    display: flex;
+    transform: translateX(-50%);
+    scale: 150%;
+    gap: 60px;
 }
 
 
 #info-jugador
 {
-  position: absolute;
-  top: 810px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
+    position: absolute;
+    top: 810px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
 }
 
 #nombre-jugador
 {
-  font-family: 'BoldPixels', monospace;
-  font-size: 70px;
-  color: #fff;
-  text-shadow: 4px 4px 0 #b0aaaa;
-  letter-spacing: 3px;
-  text-transform: uppercase;
+    font-family: 'BoldPixels', monospace;
+    font-size: 70px;
+    color: #fff;
+    text-shadow: 4px 4px 0 #b0aaaa;
+    letter-spacing: 3px;
+    text-transform: uppercase;
 }
 
 #dinero-jugador-display
 {
-  font-family: 'BoldPixels', monospace;
-  font-size: 50px;
-  color: #f0d060;
-  text-shadow: 4px 4px 0 #000;
-  letter-spacing: 2px;
+    font-family: 'BoldPixels', monospace;
+    font-size: 50px;
+    color: #f0d060;
+    text-shadow: 4px 4px 0 #000;
+    letter-spacing: 2px;
 }
 
 
 #cartas-jugador
 {
-  position: absolute;
-  top: 970px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 60px;
+    position: absolute;
+    top: 970px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 60px;
 }
 
 #fichas-display
 {
-  position: absolute;
-  top: 900px;
-  left: 80px;
-  display: flex;
-  gap: 6px;
-  align-items: flex-end;
-  scale: 250%;
+    position: absolute;
+    top: 900px;
+    left: 80px;
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    scale: 250%;
 }
 
 
 #acciones
 {
-  position: absolute;
-  top: 890px; left: 1415px;
-  display: flex; gap: 16px;
+    position: absolute;
+    top: 890px; left: 1415px;
+    display: flex; gap: 16px;
 }
 
 #acciones button
 {
-  width: 112px;
-  height: 64px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 0;
-  image-rendering: pixelated;
+    width: 112px;
+    height: 64px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    image-rendering: pixelated;
 }
 
 #acciones button:hover
@@ -189,39 +201,57 @@ body
 
 #turno-msg
 {
-  font-family: 'BoldPixels', monospace;
-  font-size: 20px; color: #888;
-  text-shadow: 1px 1px 0 #000;
-  letter-spacing: 2px; margin-top: 20px;
+    font-family: 'BoldPixels', monospace;
+    font-size: 40px; color: #888;
+    text-shadow: 1px 1px 0 #000;
+    text-align: center;
+    letter-spacing: 2px; margin-top: 20px;
 }
 
 .card
 {
-  width: 48px;
-  height: 64px;
-  background-image: url('../assets/Poker_cards.png');
-  background-size: 944px 385px;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-  display: inline-block;
-  scale: 200%;
+    width: 48px;
+    height: 64px;
+    background-image: url('../assets/Poker_cards.png');
+    background-size: 944px 385px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    display: inline-block;
+    scale: 200%;
 }
 
 .card.back
 {
-  background-position: 0px -256px;
+    background-position: 0px -256px;
 }
 
 .ficha 
 {
-  width: 32px;
-  height: 48px;
-  background-image: url('../assets/fiches_addon.png');
-  background-size: 368px 192px;
+    width: 32px;
+    height: 48px;
+    background-image: url('../assets/fiches_addon.png');
+    background-size: 368px 192px;
 
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-  display: inline-block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    display: inline-block;
+}
 
-  
+#esperando-overlay
+{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.esperando-texto
+{
+    font-family: 'BoldPixels', monospace;
+    color: #f4d35e;
+    font-size: 55px;
+    font-weight: bold;
 }

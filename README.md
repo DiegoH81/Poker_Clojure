@@ -1,4 +1,4 @@
-# Poker_Clojure
+# Uma_Musume_Poker_Clojure
 
 **Integrantes:**
 - Alvarez Puma, Alan Patrizio
