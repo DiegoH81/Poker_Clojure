@@ -110,6 +110,8 @@ function renderEstado(data)
     const ganadorDiv = document.getElementById('ganador-overlay');
     if (data.ganador)
     {
+        document.getElementById('pot-display').style.display = 'none';
+        
         ganadorDiv.style.display = 'flex';
         ganadorDiv.querySelector('.ganador-texto').textContent =
             data.ganador.tipo === 'abandono'

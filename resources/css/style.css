@@ -48,6 +48,18 @@ body
     /* align-items: flex-start;!--> */
 }
 
+#pot-display
+{
+    position: absolute;
+    top: 380px;
+    width: 100%;
+    text-align: center;
+    font-family: 'BoldPixels', monospace;
+    font-size: 62px; color: #f0d060;
+    text-shadow: 5px 5px 0 #000;
+    letter-spacing: 4px;
+}
+
 .rival-box
 {
     display: flex;
