@@ -6,8 +6,9 @@
            [java.net URI]
            [java.util.concurrent CompletableFuture]))
 
-(def estado-juego (atom {}))
-(def ws_atom (atom nil))
+(def estado-juego (agent {}))
+(def ws_atom (agent nil))
+(def ws-buffer (agent (StringBuilder.)))
 
 (defn parse_query_string [qs]
   (if (nil? qs) {}
@@ -20,12 +21,24 @@
   (reify WebSocket$Listener
     (onText [this ws data last]
       (try
-        (let [json-str (str data)
-              json-data (json/read-str json-str :key-fn keyword)]
-          (reset! estado-juego json-data)
-          (println "Estado actualizado correctamente"))
+        ;; add fragments to agent StringBuilder
+        (send ws-buffer (fn [sb] (.append sb data) sb))
+        
+        ;; check last pkt for JSON
+        (when last
+          (await ws-buffer)
+          (let [json-str (.toString @ws-buffer)
+                json-data (json/read-str json-str :key-fn keyword)]
+            ;; update agent state
+            (send estado-juego (fn [_] json-data))
+            (println "Estado actualizado correctamente"))
+          ;; restart buffer for next msg
+          (send ws-buffer (fn [_] (StringBuilder.))))
+          
         (catch Exception e
-          (println "ERROR AL PARSEAR JSON: " e)))
+          (println "ERROR AL PARSEAR JSON: " e)
+          ;; clean for error cases
+          (send ws-buffer (fn [_] (StringBuilder.)))))
       (.request ws 1)
       (CompletableFuture/completedFuture nil))))
 
@@ -36,8 +49,9 @@
                (.newWebSocketBuilder)
                (.buildAsync (URI/create ws-url) listener)
                (.join))]
-    (reset! ws_atom ws)))
-
+    ;; save WS intance in agent
+    (send ws_atom (fn [_] ws))
+    (await ws_atom)))
 
 (defn serve-static [path]
   (let [resource (clojure.java.io/resource (subs path 1))]

@@ -15,10 +15,13 @@
 
     <div id="rivales"></div>
 
-    <div id="ganador-overlay" style="display:none;">
-    <p class="ganador-texto"></p>
+    <div id="ganador-overlay">
+        <p class="ganador-texto"></p>
+        <button id="btn-reinicio" onclick="enviarReinicio()">
+            Siguiente Ronda
+        </button>
+        <p id="texto-espera-reinicio"></p>
     </div>
-
 
     <div id="pot-display">POT: $<span id="pot">0</span></div>
 

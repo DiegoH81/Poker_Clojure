@@ -7,7 +7,7 @@
             [clojure.data.json :as json]
             [poker.utils :as utils]))
 
-(def active_clients (atom {}))
+(def active_clients (agent {}))
 
 (def mesa-ag (agent {:players []
                      :pot 0
@@ -16,7 +16,8 @@
                      :current-bet 0
                      :ronda 0
                      :armada? false
-                     :ganador nil}))
+                     :ganador nil
+                     :votos-reinicio #{}}))
 
 (def rank-str {2 "2" 3 "3" 4 "4" 5 "5" 6 "6" 7 "7" 8 "8" 9 "9"
                10 "10" 11 "J" 12 "Q" 13 "K" 14 "A"})
@@ -47,7 +48,8 @@
        :opciones (if (= viewer-id (:id @jugador-actual))
                    (motor/obtener-opciones jugador-actual mesa-ag)
                    [])
-       :ganador (:ganador @mesa-ag)})))
+       :ganador (:ganador @mesa-ag)
+       :votos_reinicio (count (:votos-reinicio @mesa-ag))})))
 
 (defn broadcast-estado []
   (doseq [[socket id] @active_clients]
@@ -56,28 +58,31 @@
 (defn agregar-jugador-a-mesa [estado nombre id]
   (update estado :players conj (apuestas/crear-jugador nombre id)))
 
-
-
 (defn register_client [socket nombre]
-  (let [new_id (count (:players @mesa-ag))]
-    (send mesa-ag agregar-jugador-a-mesa nombre new_id)
+  ;; add socket to agent
+  (send active_clients assoc socket (count @active_clients))
+  (await active_clients)
+  
+  (let [id (get @active_clients socket)
+        nuevo-jugador (apuestas/crear-jugador nombre id)]
+    (send mesa-ag update :players conj nuevo-jugador)
     (await mesa-ag)
-    (swap! active_clients assoc socket new_id)
-    (println "Conectado:" nombre "(" (count (:players @mesa-ag)) "/4 )")
-    (when (= 4 (count (:players @mesa-ag)))
+    (when (= (count (:players @mesa-ag)) 4)
       (send mesa-ag assoc :armada? true)
       (await mesa-ag)
-      (println "¡Mesa armada!")
       (motor/barajar-cartas-iniciales mesa-ag))))
 
 (defn delete_client [socket]
-  (swap! active_clients dissoc socket)
+  (send active_clients dissoc socket)
+  (await active_clients)
   (println "Total clients:" (count @active_clients)))
 
 (defn on-mensaje-recibido [player-id action value]
   (when (:armada? @mesa-ag)
-    (let [cantidad (when value (Integer/parseInt value))]
-      (motor/procesar-accion-jugador mesa-ag action cantidad))))
+    (if (= action "Reinicio")
+      (motor/procesar-reinicio mesa-ag player-id) ;; catch restart
+      (let [cantidad (when value (Integer/parseInt value))]
+        (motor/procesar-accion-jugador mesa-ag action cantidad)))))
 
 (defn ws_handler [req]
   (hk-server/with-channel req channel
