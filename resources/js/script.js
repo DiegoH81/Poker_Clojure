@@ -117,10 +117,19 @@ function renderEstado(data)
             data.ganador.tipo === 'abandono'
               ? `${data.ganador.nombre} gana $${data.ganador.pozo} (todos se retiraron)`
               : `${data.ganador.nombre} gana $${data.ganador.pozo} con ${data.ganador.jugada}`;
+
+        // show votes counter
+        const esperaDiv = document.getElementById('texto-espera-reinicio');
+        esperaDiv.textContent = `Esperando jugadores (${data.votos_reinicio || 0}/4)...`;
     }
     else
     {
         ganadorDiv.style.display = 'none';
+        document.getElementById('pot-display').style.display = 'block';
+        
+        // reset view
+        document.getElementById('btn-reinicio').style.display = 'block';
+        document.getElementById('texto-espera-reinicio').style.display = 'none';
     }
 
     const yo = data.jugadores.find(j => j.id === data.jugador_id_actual);
@@ -215,8 +224,21 @@ async function actualizar()
 async function enviarAccion(accion)
 {
   const necesita = ['Apostar','Bet','Subir','Raise'].includes(accion);
-  const v = necesita ? (prompt('¿Cuánto?', '100') || 0) : 0;
+  
+  let mensaje = '¿Cuánto?';
+  if (accion === 'Subir' || accion === 'Raise') {
+      mensaje = '¿Cuánto EXTRA deseas aumentar sobre la apuesta actual?';
+  }
+
+  const v = necesita ? (prompt(mensaje, '100') || 0) : 0;
   await fetch(`/api/decision?accion=${encodeURIComponent(accion)}&valor=${v}`);
+}
+
+async function enviarReinicio() {
+    // hide button and show text
+    document.getElementById('btn-reinicio').style.display = 'none';
+    document.getElementById('texto-espera-reinicio').style.display = 'block';
+    await fetch(`/api/decision?accion=Reinicio&valor=0`);
 }
 
 async function iniciar()

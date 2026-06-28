@@ -267,3 +267,42 @@ body
     font-size: 55px;
     font-weight: bold;
 }
+
+#ganador-overlay
+{
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+
+    z-index: 999;
+}
+
+#ganador-overlay .ganador-texto
+{
+    position: static;
+}
+
+#btn-reinicio
+{
+    padding: 15px 30px;
+    font-family: 'BoldPixels', monospace;
+    font-size: 30px;
+    cursor: pointer;
+    background: #f0d060;
+    border: none;
+    border-radius: 10px;
+}
+
+#texto-espera-reinicio
+{
+    display: none;
+    color: #fff;
+    font-family: 'BoldPixels', monospace;
+    font-size: 30px;
+}
