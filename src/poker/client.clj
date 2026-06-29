@@ -67,7 +67,6 @@
        :body (clojure.java.io/input-stream resource)}
       {:status 404 :body "Not found"})))
 
-
 (defn web_handler [req]
   (let [uri (:uri req)]
     (case uri
