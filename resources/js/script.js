@@ -1,10 +1,8 @@
-
-
 const SUIT_ROW = { 'h':0, 'd':1, 's':2, 'c':3 }; // hearts, diamonds, spades y clubs
 const RANK_COL = { 'A':0,'2':1,'3':2,'4':3,'5':4,'6':5,'7':6, '8':7,'9':8,'10':9,'J':10,'Q':11,'K':12 };
+let votoEnviado = false;
 
-
-// formato : 10h o Ad   -> numero y palo
+// formato : 10h o Ad -> numero y palo
 function create_card(cardStr)
 {
     const div = document.createElement('div');
@@ -30,7 +28,6 @@ function create_card(cardStr)
 
 // Tipos: rojo, blanco, verde, negro, azul, morado, rosa, amarillo
 // Variante: 0-3
-
 
 const FICHA_BASE = [ [0,0], [0,1], [0,2], [0,3], 
                      [192,0], [192,1], [192,2], [192,3] ];
@@ -81,7 +78,6 @@ function render_tokens(contenedor, monto)
     }
 }
 
-
 // Buttons
 const BOTON_IMG = {
     'Apostar':'assets/boton_apostar.png',
@@ -90,7 +86,6 @@ const BOTON_IMG = {
     'Pasar':  'assets/boton_pasar.png',
     'Retirarse':'assets/boton_retirar.png',
 };
-
 
 // Render
 function renderEstado(data)
@@ -118,31 +113,37 @@ function renderEstado(data)
               ? `${data.ganador.nombre} gana $${data.ganador.pozo} (todos se retiraron)`
               : `${data.ganador.nombre} gana $${data.ganador.pozo} con ${data.ganador.jugada}`;
 
-        // count player with $ > 0
         const listaJugadores = data.jugadores || data.players || [];
         const jugadoresVivos = listaJugadores.filter(j => (j.dinero || j.money || 0) > 0).length;
 
-        // if only 1 player - ends
-        if (jugadoresVivos <= 1) {
+        if (votoEnviado) {
+            // already vote - hide buttons
             document.getElementById('btn-reinicio').style.display = 'none';
-            document.getElementById('btn-reinicio-total').style.display = 'block';
-            
-            ganadorDiv.querySelector('.ganador-texto').textContent += " ¡Y ES EL CAMPEÓN ABSOLUTO!";
-        } else {
-            document.getElementById('btn-reinicio').style.display = 'block';
             document.getElementById('btn-reinicio-total').style.display = 'none';
+            document.getElementById('texto-espera-reinicio').style.display = 'block';
+        } else {
+            // check which button show
+            if (jugadoresVivos <= 1) {
+                document.getElementById('btn-reinicio').style.display = 'none';
+                document.getElementById('btn-reinicio-total').style.display = 'block';
+                ganadorDiv.querySelector('.ganador-texto').textContent += " ¡Y ES EL CAMPEÓN ABSOLUTO!";
+            } else {
+                document.getElementById('btn-reinicio').style.display = 'block';
+                document.getElementById('btn-reinicio-total').style.display = 'none';
+            }
+            document.getElementById('texto-espera-reinicio').style.display = 'none';
         }
 
-        // show votes counter
         const esperaDiv = document.getElementById('texto-espera-reinicio');
         esperaDiv.textContent = `Esperando jugadores (${data.votos_reinicio || 0}/4)...`;
     }
     else
     {
+        votoEnviado = false; 
+        
         ganadorDiv.style.display = 'none';
         document.getElementById('pot-display').style.display = 'block';
         
-        // reset view
         document.getElementById('btn-reinicio').style.display = 'block';
         document.getElementById('texto-espera-reinicio').style.display = 'none';
     }
@@ -169,19 +170,22 @@ function renderEstado(data)
         const cartas = document.createElement('div');
         cartas.className = 'rival-cartas';
 
-        (r.cartas || ['back','back']).forEach(c => cartas.appendChild(create_card(c)));
+        let cartasParaMostrar = ['back', 'back']; 
+        
+        if (data.ganador && r.cartas && r.cartas.length >= 2) {
+            cartasParaMostrar = r.cartas.slice(0, 2); // reveal cards
+        }
+
+        cartasParaMostrar.forEach(c => cartas.appendChild(create_card(c)));
 
         box.append(nombre, dinero, cartas);
-
         rivalesDiv.appendChild(box);
     });
 
     // Mesa
     document.getElementById('pot').textContent = data.mesa.pot;
-
     const cartasMesa = document.getElementById('cartas-mesa');
     cartasMesa.innerHTML = '';
-
     (data.mesa.cartas || []).forEach(c => cartasMesa.appendChild(create_card(c)));
 
     // Jugador
@@ -191,7 +195,8 @@ function renderEstado(data)
     const cartasJugador = document.getElementById('cartas-jugador');
     cartasJugador.innerHTML = '';
 
-    (yo.cartas || []).forEach(c => cartasJugador.appendChild(create_card(c)));
+    // show only 2 cards
+    (yo.cartas || []).slice(0, 2).forEach(c => cartasJugador.appendChild(create_card(c)));
 
     render_tokens(document.getElementById('fichas-display'), yo.dinero);
 
@@ -272,13 +277,14 @@ async function enviarAccion(accion)
 }
 
 async function enviarReinicio() {
-    // hide button and show text
+    votoEnviado = true;
     document.getElementById('btn-reinicio').style.display = 'none';
     document.getElementById('texto-espera-reinicio').style.display = 'block';
     await fetch(`/api/decision?accion=Reinicio&valor=0`);
 }
 
 async function enviarReinicioTotal() {
+    votoEnviado = true;
     document.getElementById('btn-reinicio').style.display = 'none';
     document.getElementById('btn-reinicio-total').style.display = 'none';
     document.getElementById('texto-espera-reinicio').style.display = 'block';
