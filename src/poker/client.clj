@@ -92,10 +92,24 @@
       (serve-static uri))))
 
 (defn -main [& args]
-
-  (let [port (if (seq args)
-               (Integer/parseInt (first args))
-               3000)]
-
-    (hk-server/run-server web_handler {:port port})
-    (println "View server running on port: " port)))
+  ;; read args - port web - server ip - server port
+  (let [port-web (if (seq args) (Integer/parseInt (nth args 0)) 3000)
+        ip-server (if (> (count args) 1) (nth args 1) "localhost")
+        port-server (if (> (count args) 2) (nth args 2) "8080")]
+    
+    (println (str "Iniciando cliente web en http://localhost:" port-web))
+    (println (str "Conectando al Servidor Central en ws://" ip-server ":" port-server))
+    
+    ;; save dynamic url
+    (with-redefs [conectar-con-nombre 
+                  (fn [nombre]
+                    (let [uri-str (str "ws://" ip-server ":" port-server "/ws?nombre=" 
+                                       (java.net.URLEncoder/encode nombre "UTF-8"))
+                          client (HttpClient/newHttpClient)
+                          ws-builder (.newWebSocketBuilder client)]
+                      (send ws_atom (fn [_]
+                                      (-> (.buildAsync ws-builder (URI/create uri-str) listener)
+                                          (.get))))))]
+      
+      ;; init local http server
+      (hk-server/run-server web_handler {:port port-web}))))

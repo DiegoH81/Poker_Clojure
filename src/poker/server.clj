@@ -122,10 +122,7 @@
      :headers {"Content-Type" "text/plain"}
      :body "Active server"}))
 
-
 (defn -main [& args]
-  (let [server (hk-server/run-server app {:port 8080})]
-    (println "Running on port 8080")
-    (println "Enter to stop...")
-    (read-line)
-    (server)))
+  (let [port (if (seq args) (Integer/parseInt (first args)) 8080)]
+    (println "Servidor de Poker corriendo en el puerto" port)
+    (hk-server/run-server app {:port port})))
