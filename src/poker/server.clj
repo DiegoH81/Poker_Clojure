@@ -79,8 +79,11 @@
 
 (defn on-mensaje-recibido [player-id action value]
   (when (:armada? @mesa-ag)
-    (if (= action "Reinicio")
-      (motor/procesar-reinicio mesa-ag player-id) ;; catch restart
+    (cond
+      ;; catch restart types
+      (= action "Reinicio") (motor/procesar-reinicio mesa-ag player-id)
+      (= action "ReinicioTotal") (motor/procesar-reinicio-total mesa-ag player-id) ;; <-- NUEVO
+      :else
       (let [cantidad (when value (Integer/parseInt value))]
         (motor/procesar-accion-jugador mesa-ag action cantidad)))))
 

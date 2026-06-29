@@ -118,6 +118,21 @@ function renderEstado(data)
               ? `${data.ganador.nombre} gana $${data.ganador.pozo} (todos se retiraron)`
               : `${data.ganador.nombre} gana $${data.ganador.pozo} con ${data.ganador.jugada}`;
 
+        // count player with $ > 0
+        const listaJugadores = data.jugadores || data.players || [];
+        const jugadoresVivos = listaJugadores.filter(j => (j.dinero || j.money || 0) > 0).length;
+
+        // if only 1 player - ends
+        if (jugadoresVivos <= 1) {
+            document.getElementById('btn-reinicio').style.display = 'none';
+            document.getElementById('btn-reinicio-total').style.display = 'block';
+            
+            ganadorDiv.querySelector('.ganador-texto').textContent += " ¡Y ES EL CAMPEÓN ABSOLUTO!";
+        } else {
+            document.getElementById('btn-reinicio').style.display = 'block';
+            document.getElementById('btn-reinicio-total').style.display = 'none';
+        }
+
         // show votes counter
         const esperaDiv = document.getElementById('texto-espera-reinicio');
         esperaDiv.textContent = `Esperando jugadores (${data.votos_reinicio || 0}/4)...`;
@@ -223,15 +238,37 @@ async function actualizar()
 
 async function enviarAccion(accion)
 {
-  const necesita = ['Apostar','Bet','Subir','Raise'].includes(accion);
-  
-  let mensaje = '¿Cuánto?';
-  if (accion === 'Subir' || accion === 'Raise') {
-      mensaje = '¿Cuánto EXTRA deseas aumentar sobre la apuesta actual?';
-  }
+    const necesita = ['Apostar','Bet','Subir','Raise'].includes(accion);
+    let v = 0;
 
-  const v = necesita ? (prompt(mensaje, '100') || 0) : 0;
-  await fetch(`/api/decision?accion=${encodeURIComponent(accion)}&valor=${v}`);
+    if (necesita) {
+        let mensaje = '¿Cuánto?';
+        if (accion === 'Subir' || accion === 'Raise') {
+            mensaje = '¿Cuánto EXTRA deseas aumentar sobre la apuesta actual?';
+        }
+
+        // check actual money
+        const dineroDisplay = document.getElementById('dinero-jugador').textContent;
+        const maxDinero = parseInt(dineroDisplay) || 0;
+
+        const input = prompt(`${mensaje}\n(Dinero disponible: $${maxDinero})`, '100');
+        if (input === null)
+            return;
+
+        v = parseInt(input);
+        if (isNaN(v) || v <= 0) {
+            alert('Por favor, ingresa una cantidad válida.');
+            return;
+        }
+
+        // all-in validation
+        if (v > maxDinero) {
+            alert(`Solo tienes $${maxDinero}. Se enviará un All-In con todo tu dinero.`);
+            v = maxDinero;
+        }
+    }
+
+    await fetch(`/api/decision?accion=${encodeURIComponent(accion)}&valor=${v}`);
 }
 
 async function enviarReinicio() {
@@ -239,6 +276,13 @@ async function enviarReinicio() {
     document.getElementById('btn-reinicio').style.display = 'none';
     document.getElementById('texto-espera-reinicio').style.display = 'block';
     await fetch(`/api/decision?accion=Reinicio&valor=0`);
+}
+
+async function enviarReinicioTotal() {
+    document.getElementById('btn-reinicio').style.display = 'none';
+    document.getElementById('btn-reinicio-total').style.display = 'none';
+    document.getElementById('texto-espera-reinicio').style.display = 'block';
+    await fetch(`/api/decision?accion=ReinicioTotal&valor=0`);
 }
 
 async function iniciar()

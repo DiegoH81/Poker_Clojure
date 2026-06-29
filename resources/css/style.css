@@ -299,6 +299,18 @@ body
     border-radius: 10px;
 }
 
+#btn-reinicio-total
+{
+    padding: 15px 30px;
+    font-family: 'BoldPixels', monospace;
+    font-size: 30px;
+    cursor: pointer;
+    background: #ff5555;
+    color: white;
+    border: none;
+    border-radius: 10px;
+}
+
 #texto-espera-reinicio
 {
     display: none;

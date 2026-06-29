@@ -41,9 +41,10 @@
 (defn avanzar-turno [m]
   (assoc m :turn (buscar-siguiente-turno (:turn m) (:players m))))
 
-(defn aplicar-big-blind-mesa [m]
-  (assoc m :pot (+ (:pot m) 50) 
-           :current-bet 50 
+(defn aplicar-big-blind-mesa [m cantidad-real]
+  (assoc m :pot (+ (:pot m) cantidad-real) 
+           :current-bet cantidad-real 
+           ;; go to next turn
            :turn (buscar-siguiente-turno (:turn m) (:players m))))
 
 (defn sumar-al-pozo-y-avanzar [m diferencia]
@@ -55,10 +56,10 @@
            :current-bet cantidad 
            :turn (buscar-siguiente-turno (:turn m) (:players m))))
 
-(defn aplicar-big-blind-jugador [j]
-  (assoc j :money (- (:money j) 50) 
-           :bet 50 
-           :action "BigBlind"))
+(defn aplicar-big-blind-jugador [j cantidad-real]
+  (assoc j :money (- (:money j) cantidad-real) 
+           :bet cantidad-real 
+           :action "Big Blind"))
 
 (defn aplicar-igualar-jugador [j diferencia apuesta-actual]
   (assoc j :money (- (:money j) diferencia) 
@@ -83,7 +84,9 @@
   (not (:fold @j)))
 
 (defn jugador-nivelado? [apuesta-maxima j]
-  (or (:fold @j) (= (:bet @j) apuesta-maxima)))
+  (or (:fold @j) 
+      (<= (:money @j) 0) ;; if $ = 0 - is leveled
+      (>= (:bet @j) apuesta-maxima)))
 
 (defn tiene-jugada-pendiente? [j]
   (= (:action @j) ""))
@@ -113,9 +116,12 @@
 (defn ejecutar-igualar [jugador mesa-ag]
   (let [apuesta-actual (:current-bet @mesa-ag)
         p-bet (:bet @jugador)
-        diferencia (- apuesta-actual p-bet)]
-    (send jugador aplicar-igualar-jugador diferencia apuesta-actual)
-    (send mesa-ag sumar-al-pozo-y-avanzar diferencia)))
+        diferencia (- apuesta-actual p-bet)
+        ;; avoid put non existent money
+        diferencia-real (min diferencia (:money @jugador))]
+    
+    (send jugador aplicar-igualar-jugador diferencia-real apuesta-actual)
+    (send mesa-ag sumar-al-pozo-y-avanzar diferencia-real)))
 
 (defn ejecutar-pasar [jugador mesa-ag]
   (send jugador assoc :action "Pasar")
@@ -124,12 +130,15 @@
 (defn ejecutar-subir [jugador mesa-ag cantidad-extra]
   (let [apuesta-actual (:current-bet @mesa-ag)
         p-bet (:bet @jugador)
-        ;; equal actual + extra bet
+        ;; biggest bet
         nueva-apuesta (+ apuesta-actual cantidad-extra)
-        diferencia (- nueva-apuesta p-bet)]
+        ;; to pay is = new bet - old bet
+        diferencia (- nueva-apuesta p-bet)
+        ;; not exceds its money
+        diferencia-real (min diferencia (:money @jugador))]
     
-    (send jugador aplicar-subir-jugador diferencia nueva-apuesta)
-    (send mesa-ag aplicar-subir-mesa diferencia nueva-apuesta)))
+    (send jugador aplicar-subir-jugador diferencia-real nueva-apuesta)
+    (send mesa-ag aplicar-subir-mesa diferencia-real nueva-apuesta)))
 
 (defn ejecutar-retirarse [jugador mesa-ag]
   (send jugador assoc :action "Retirarse" :fold true)
@@ -172,7 +181,6 @@
   
   (await mesa-ag))
 
-
 (defn barajar-cartas-iniciales [mesa-ag]
   (let [players (:players @mesa-ag)
         mazo-barajado (shuffle cartas/game-cards)
@@ -200,8 +208,22 @@
     (send fase-actual (fn [_] :pre-flop))
     (await mazo-restante fase-actual)
 
-    (ejecutar-big-blind (first players) mesa-ag)
-    (await (first players) mesa-ag)))
+    (send mesa-ag assoc :turn (buscar-siguiente-turno -1 (:players @mesa-ag)))
+    (await mesa-ag)
+
+    ;; get player turn
+    (let [idx-turno (:turn @mesa-ag)
+          jugador-bb (nth (:players @mesa-ag) idx-turno)
+          dinero-disponible (:money @jugador-bb)
+          
+          ;; calculate how much to charge
+          bb-real (min 50 dinero-disponible)]
+      
+      ;; charge player
+      (send jugador-bb aplicar-big-blind-jugador bb-real)
+      (send mesa-ag aplicar-big-blind-mesa bb-real)
+      ;; wait agent update
+      (await jugador-bb mesa-ag))))
 
 (defn showdown [mesa-ag]
   (let [players (:players @mesa-ag)
@@ -293,7 +315,13 @@
   (when (= 4 (count (:votos-reinicio @mesa-ag)))
     ;; clean player states
     (doseq [j (:players @mesa-ag)]
-      (send j assoc :hand [] :bet 0 :action "" :fold false))
+      (let [sin-dinero? (<= (:money @j) 0)]
+        (send j assoc 
+              :hand [] 
+              :bet 0 
+              :action (if sin-dinero? "ELIMINADO" "") 
+              :fold sin-dinero?))) ;; if $ = 0 - fold true
+
     ;; clean all
     (send mesa-ag assoc 
           :pot 0
@@ -304,4 +332,24 @@
           :votos-reinicio #{})
     (await mesa-ag)
     ;; sort again
+    (barajar-cartas-iniciales mesa-ag)))
+
+(defn procesar-reinicio-total [mesa-ag player-id]
+  (send mesa-ag update :votos-reinicio (fnil conj #{}) player-id)
+  (await mesa-ag)
+  
+  (when (= 4 (count (:votos-reinicio @mesa-ag)))
+    ;; restart all states
+    (doseq [j (:players @mesa-ag)]
+      (send j assoc :hand [] :bet 0 :action "" :fold false :money 1000))
+    
+    ;; clean table
+    (send mesa-ag assoc 
+          :pot 0
+          :community-cards []
+          :current-bet 0
+          :ganador nil
+          :ronda 0
+          :votos-reinicio #{})
+    (await mesa-ag)
     (barajar-cartas-iniciales mesa-ag)))
