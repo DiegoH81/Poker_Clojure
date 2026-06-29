@@ -25,13 +25,21 @@
 
 (defn carta-str [c] (str (rank-str (:rank c)) (tipo-str (:tipo c))))
 
+;;(defn jugador-json [j viewer-id]
+;;  {:id (:id @j)
+;;   :nombre (:name @j)
+;;   :dinero (:money @j)
+;;   :cartas (if (= (:id @j) viewer-id)
+;;             (mapv carta-str (:hand @j))
+;;             (vec (repeat (count (:hand @j)) "back")))})
+
 (defn jugador-json [j viewer-id]
   {:id (:id @j)
    :nombre (:name @j)
    :dinero (:money @j)
-   :cartas (if (= (:id @j) viewer-id)
-             (mapv carta-str (:hand @j))
-             (vec (repeat (count (:hand @j)) "back")))})
+   :cartas (if (or (= (:id @j) viewer-id) (:ganador @mesa-ag))
+             (map carta-str (:hand @j))
+             ["back" "back"])})
 
 (defn estado-json [viewer-id]
   (if (not (:armada? @mesa-ag))
