@@ -2,7 +2,6 @@ const SUIT_ROW = { 'h':0, 'd':1, 's':2, 'c':3 }; // hearts, diamonds, spades y c
 const RANK_COL = { 'A':0,'2':1,'3':2,'4':3,'5':4,'6':5,'7':6, '8':7,'9':8,'10':9,'J':10,'Q':11,'K':12 };
 let votoEnviado = false;
 
-// formato : 10h o Ad -> numero y palo
 function create_card(cardStr)
 {
     const div = document.createElement('div');
@@ -24,15 +23,8 @@ function create_card(cardStr)
     return div;
 }
 
-// TOKENS
-
-// Tipos: rojo, blanco, verde, negro, azul, morado, rosa, amarillo
-// Variante: 0-3
-
 const FICHA_BASE = [ [0,0], [0,1], [0,2], [0,3], 
                      [192,0], [192,1], [192,2], [192,3] ];
-
-// FICHA_BASE = [x, y]
 
 function create_money_token(tipo, variante)
 {
@@ -78,7 +70,6 @@ function render_tokens(contenedor, monto)
     }
 }
 
-// Buttons
 const BOTON_IMG = {
     'Apostar':'assets/boton_apostar.png',
     'Subir':  'assets/boton_apostar.png',
@@ -87,7 +78,6 @@ const BOTON_IMG = {
     'Retirarse':'assets/boton_retirar.png',
 };
 
-// Render
 function renderEstado(data)
 {
     const esperandoDiv = document.getElementById('esperando-overlay');
@@ -117,12 +107,10 @@ function renderEstado(data)
         const jugadoresVivos = listaJugadores.filter(j => (j.dinero || j.money || 0) > 0).length;
 
         if (votoEnviado) {
-            // already vote - hide buttons
             document.getElementById('btn-reinicio').style.display = 'none';
             document.getElementById('btn-reinicio-total').style.display = 'none';
             document.getElementById('texto-espera-reinicio').style.display = 'block';
         } else {
-            // check which button show
             if (jugadoresVivos <= 1) {
                 document.getElementById('btn-reinicio').style.display = 'none';
                 document.getElementById('btn-reinicio-total').style.display = 'block';
@@ -152,7 +140,6 @@ function renderEstado(data)
 
     const rivales = data.jugadores.filter(j => j.id !== data.jugador_id_actual);
 
-    // Rivales
     const rivalesDiv = document.getElementById('rivales');
     rivalesDiv.innerHTML = '';
     rivales.forEach(r => {
@@ -182,25 +169,21 @@ function renderEstado(data)
         rivalesDiv.appendChild(box);
     });
 
-    // Mesa
     document.getElementById('pot').textContent = data.mesa.pot;
     const cartasMesa = document.getElementById('cartas-mesa');
     cartasMesa.innerHTML = '';
     (data.mesa.cartas || []).forEach(c => cartasMesa.appendChild(create_card(c)));
 
-    // Jugador
     document.getElementById('nombre-jugador').textContent = yo.nombre;
     document.getElementById('dinero-jugador').textContent = yo.dinero;
 
     const cartasJugador = document.getElementById('cartas-jugador');
     cartasJugador.innerHTML = '';
 
-    // show only 2 cards
     (yo.cartas || []).slice(0, 2).forEach(c => cartasJugador.appendChild(create_card(c)));
 
     render_tokens(document.getElementById('fichas-display'), yo.dinero);
 
-    // Acciones
     const accionesDiv = document.getElementById('acciones');
     accionesDiv.innerHTML = '';
     if (data.turno_id === data.jugador_id_actual)
@@ -252,7 +235,6 @@ async function enviarAccion(accion)
             mensaje = '¿Cuánto EXTRA deseas aumentar sobre la apuesta actual?';
         }
 
-        // check actual money
         const dineroDisplay = document.getElementById('dinero-jugador').textContent;
         const maxDinero = parseInt(dineroDisplay) || 0;
 
@@ -266,7 +248,6 @@ async function enviarAccion(accion)
             return;
         }
 
-        // all-in validation
         if (v > maxDinero) {
             alert(`Solo tienes $${maxDinero}. Se enviará un All-In con todo tu dinero.`);
             v = maxDinero;

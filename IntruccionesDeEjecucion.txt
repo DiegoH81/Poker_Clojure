@@ -1,0 +1,17 @@
+Instrucciones de Ejecución
+
+En la documentacion tecnica se indica la instalacion de los programas requeridos
+
+Para correr el programa, deben usarse terminales que esten en el directorio Poker_Clojure, asi como este archivo
+
+Para correr el servidor se usa el siguiente comando:
+    clj -M -m poker.server [puerto]
+
+Para los clientes locales o remotos usar:
+    clj -M -m poker.client [puerto_web] [ip_servidor] [puerto_servidor]
+
+Ejemplos:
+
+clj -M -m poker.server 8080 (Lanza el nodo central en la PC principal)
+clj -M -m poker.client 3001 localhost 8080 (Jugador 1 en la misma máquina del servidor)
+clj -M -m poker.client 3002 10.0.0.1 8080 (Jugador 2 desde otra PC conectada a la red local IP 10.0.0.1)
