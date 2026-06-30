@@ -21,23 +21,17 @@
   (reify WebSocket$Listener
     (onText [this ws data last]
       (try
-        ;; add fragments to agent StringBuilder
         (send ws-buffer (fn [sb] (.append sb data) sb))
-        
-        ;; check last pkt for JSON
         (when last
           (await ws-buffer)
           (let [json-str (.toString @ws-buffer)
                 json-data (json/read-str json-str :key-fn keyword)]
-            ;; update agent state
             (send estado-juego (fn [_] json-data))
             (println "Estado actualizado correctamente"))
-          ;; restart buffer for next msg
           (send ws-buffer (fn [_] (StringBuilder.))))
           
         (catch Exception e
           (println "ERROR AL PARSEAR JSON: " e)
-          ;; clean for error cases
           (send ws-buffer (fn [_] (StringBuilder.)))))
       (.request ws 1)
       (CompletableFuture/completedFuture nil))))
