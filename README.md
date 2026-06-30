@@ -17,7 +17,7 @@ El programa es una implementación robusta y distribuida del clásico juego de c
 ## Tecnologías Utilizadas
 
 * **Lenguaje:** Clojure 1.11+ (Programación Funcional)
-* **Servidor HTTP & WebSockets:** [Http-Kit](+http-kit+)
+* **Servidor HTTP & WebSockets:** Http-Kit
 * **Serialización:** `clojure.data.json`
 * **Interoperabilidad:** Java Native Net HTTP (para el WebSocket Listener asíncrono)
 * **Frontend:** HTML5, CSS3 clásico y Vanilla JavaScript (peticiones asíncronas `fetch`)
@@ -33,10 +33,10 @@ Tener instalado el entorno de ejecución de Clojure ([Clojure CLI](https://cloju
 
 ### Ejecución
 Para correr el servidor se usa el siguiente comando:
-- clj -M -m poker.server [puerto]
+- clj -M -m poker.server PUERTO
 
 Para los clientes locales o remotos usar:
-- clj -M -m poker.client [puerto_web] [ip_servidor] [puerto_servidor]
+- clj -M -m poker.client PUERTO_WEB IP_SERVIDOR PUERTO_SERVIDOR
 
 Ejemplos:
 - clj -M -m poker.server 8080 (Lanza el nodo central en la PC principal)
