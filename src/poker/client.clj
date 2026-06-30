@@ -23,7 +23,6 @@
     (onText [this ws data last]
       (try
         (send ws-buffer (fn [sb] (.append sb data) sb))
-        
         (when last
           (await ws-buffer)
           (let [json-str (.toString @ws-buffer)
