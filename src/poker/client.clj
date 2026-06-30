@@ -9,6 +9,7 @@
 (def estado-juego (agent {}))
 (def ws_atom (agent nil))
 (def ws-buffer (agent (StringBuilder.)))
+(def server-config (atom {:ip "localhost" :port "8080"}))
 
 (defn parse_query_string [qs]
   (if (nil? qs) {}
@@ -21,35 +22,31 @@
   (reify WebSocket$Listener
     (onText [this ws data last]
       (try
-        ;; add fragments to agent StringBuilder
         (send ws-buffer (fn [sb] (.append sb data) sb))
         
-        ;; check last pkt for JSON
         (when last
           (await ws-buffer)
           (let [json-str (.toString @ws-buffer)
                 json-data (json/read-str json-str :key-fn keyword)]
-            ;; update agent state
             (send estado-juego (fn [_] json-data))
             (println "Estado actualizado correctamente"))
-          ;; restart buffer for next msg
           (send ws-buffer (fn [_] (StringBuilder.))))
           
         (catch Exception e
           (println "ERROR AL PARSEAR JSON: " e)
-          ;; clean for error cases
           (send ws-buffer (fn [_] (StringBuilder.)))))
       (.request ws 1)
       (CompletableFuture/completedFuture nil))))
 
 (defn conectar-con-nombre [nombre]
-  (let [ws-url (str "ws://localhost:8080/ws?nombre=" nombre)
+  (let [ip (:ip @server-config)
+        port (:port @server-config)
+        ws-url (str "ws://" ip ":" port "/ws?nombre=" (java.net.URLEncoder/encode nombre "UTF-8"))
         client (HttpClient/newHttpClient)
         ws (-> client
                (.newWebSocketBuilder)
                (.buildAsync (URI/create ws-url) listener)
                (.join))]
-    ;; save WS intance in agent
     (send ws_atom (fn [_] ws))
     (await ws_atom)))
 
@@ -92,24 +89,13 @@
       (serve-static uri))))
 
 (defn -main [& args]
-  ;; read args - port web - server ip - server port
   (let [port-web (if (seq args) (Integer/parseInt (nth args 0)) 3000)
         ip-server (if (> (count args) 1) (nth args 1) "localhost")
         port-server (if (> (count args) 2) (nth args 2) "8080")]
     
+    (reset! server-config {:ip ip-server :port port-server})
+    
     (println (str "Iniciando cliente web en http://localhost:" port-web))
     (println (str "Conectando al Servidor Central en ws://" ip-server ":" port-server))
     
-    ;; save dynamic url
-    (with-redefs [conectar-con-nombre 
-                  (fn [nombre]
-                    (let [uri-str (str "ws://" ip-server ":" port-server "/ws?nombre=" 
-                                       (java.net.URLEncoder/encode nombre "UTF-8"))
-                          client (HttpClient/newHttpClient)
-                          ws-builder (.newWebSocketBuilder client)]
-                      (send ws_atom (fn [_]
-                                      (-> (.buildAsync ws-builder (URI/create uri-str) listener)
-                                          (.get))))))]
-      
-      ;; init local http server
-      (hk-server/run-server web_handler {:port port-web}))))
+    (hk-server/run-server web_handler {:port port-web})))

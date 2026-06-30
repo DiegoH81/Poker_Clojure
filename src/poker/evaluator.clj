@@ -44,8 +44,6 @@
         greater-rank (apply max (map #(:rank-eval (:evaluation-type %1)) format_hands))
         best-hands (filter #(= greater-rank (:rank-eval (:evaluation-type %1))) format_hands)
         best-hand-player (last (sort-by tiebreak best-hands))]
-        ;;(println "MEJOR MANO A BUSCAR " greater-rank)
-        ;;(println "Las mejores manos" best-hands)
         (println "Mejor mano del jugador final" best-hand-player)
         best-hand-player
     ))
