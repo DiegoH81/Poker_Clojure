@@ -1,10 +1,7 @@
-
-
 const SUIT_ROW = { 'h':0, 'd':1, 's':2, 'c':3 }; // hearts, diamonds, spades y clubs
 const RANK_COL = { 'A':0,'2':1,'3':2,'4':3,'5':4,'6':5,'7':6, '8':7,'9':8,'10':9,'J':10,'Q':11,'K':12 };
+let votoEnviado = false;
 
-
-// formato : 10h o Ad   -> numero y palo
 function create_card(cardStr)
 {
     const div = document.createElement('div');
@@ -26,16 +23,8 @@ function create_card(cardStr)
     return div;
 }
 
-// TOKENS
-
-// Tipos: rojo, blanco, verde, negro, azul, morado, rosa, amarillo
-// Variante: 0-3
-
-
 const FICHA_BASE = [ [0,0], [0,1], [0,2], [0,3], 
                      [192,0], [192,1], [192,2], [192,3] ];
-
-// FICHA_BASE = [x, y]
 
 function create_money_token(tipo, variante)
 {
@@ -81,8 +70,6 @@ function render_tokens(contenedor, monto)
     }
 }
 
-
-// Buttons
 const BOTON_IMG = {
     'Apostar':'assets/boton_apostar.png',
     'Subir':  'assets/boton_apostar.png',
@@ -91,8 +78,6 @@ const BOTON_IMG = {
     'Retirarse':'assets/boton_retirar.png',
 };
 
-
-// Render
 function renderEstado(data)
 {
     const esperandoDiv = document.getElementById('esperando-overlay');
@@ -117,17 +102,44 @@ function renderEstado(data)
             data.ganador.tipo === 'abandono'
               ? `${data.ganador.nombre} gana $${data.ganador.pozo} (todos se retiraron)`
               : `${data.ganador.nombre} gana $${data.ganador.pozo} con ${data.ganador.jugada}`;
+
+        const listaJugadores = data.jugadores || data.players || [];
+        const jugadoresVivos = listaJugadores.filter(j => (j.dinero || j.money || 0) > 0).length;
+
+        if (votoEnviado) {
+            document.getElementById('btn-reinicio').style.display = 'none';
+            document.getElementById('btn-reinicio-total').style.display = 'none';
+            document.getElementById('texto-espera-reinicio').style.display = 'block';
+        } else {
+            if (jugadoresVivos <= 1) {
+                document.getElementById('btn-reinicio').style.display = 'none';
+                document.getElementById('btn-reinicio-total').style.display = 'block';
+                ganadorDiv.querySelector('.ganador-texto').textContent += " ¡Y ES EL CAMPEÓN ABSOLUTO!";
+            } else {
+                document.getElementById('btn-reinicio').style.display = 'block';
+                document.getElementById('btn-reinicio-total').style.display = 'none';
+            }
+            document.getElementById('texto-espera-reinicio').style.display = 'none';
+        }
+
+        const esperaDiv = document.getElementById('texto-espera-reinicio');
+        esperaDiv.textContent = `Esperando jugadores (${data.votos_reinicio || 0}/4)...`;
     }
     else
     {
+        votoEnviado = false; 
+        
         ganadorDiv.style.display = 'none';
+        document.getElementById('pot-display').style.display = 'block';
+        
+        document.getElementById('btn-reinicio').style.display = 'block';
+        document.getElementById('texto-espera-reinicio').style.display = 'none';
     }
 
     const yo = data.jugadores.find(j => j.id === data.jugador_id_actual);
 
     const rivales = data.jugadores.filter(j => j.id !== data.jugador_id_actual);
 
-    // Rivales
     const rivalesDiv = document.getElementById('rivales');
     rivalesDiv.innerHTML = '';
     rivales.forEach(r => {
@@ -145,33 +157,33 @@ function renderEstado(data)
         const cartas = document.createElement('div');
         cartas.className = 'rival-cartas';
 
-        (r.cartas || ['back','back']).forEach(c => cartas.appendChild(create_card(c)));
+        let cartasParaMostrar = ['back', 'back']; 
+        
+        if (data.ganador && r.cartas && r.cartas.length >= 2) {
+            cartasParaMostrar = r.cartas.slice(0, 2); // reveal cards
+        }
+
+        cartasParaMostrar.forEach(c => cartas.appendChild(create_card(c)));
 
         box.append(nombre, dinero, cartas);
-
         rivalesDiv.appendChild(box);
     });
 
-    // Mesa
     document.getElementById('pot').textContent = data.mesa.pot;
-
     const cartasMesa = document.getElementById('cartas-mesa');
     cartasMesa.innerHTML = '';
-
     (data.mesa.cartas || []).forEach(c => cartasMesa.appendChild(create_card(c)));
 
-    // Jugador
     document.getElementById('nombre-jugador').textContent = yo.nombre;
     document.getElementById('dinero-jugador').textContent = yo.dinero;
 
     const cartasJugador = document.getElementById('cartas-jugador');
     cartasJugador.innerHTML = '';
 
-    (yo.cartas || []).forEach(c => cartasJugador.appendChild(create_card(c)));
+    (yo.cartas || []).slice(0, 2).forEach(c => cartasJugador.appendChild(create_card(c)));
 
     render_tokens(document.getElementById('fichas-display'), yo.dinero);
 
-    // Acciones
     const accionesDiv = document.getElementById('acciones');
     accionesDiv.innerHTML = '';
     if (data.turno_id === data.jugador_id_actual)
@@ -214,9 +226,50 @@ async function actualizar()
 
 async function enviarAccion(accion)
 {
-  const necesita = ['Apostar','Bet','Subir','Raise'].includes(accion);
-  const v = necesita ? (prompt('¿Cuánto?', '100') || 0) : 0;
-  await fetch(`/api/decision?accion=${encodeURIComponent(accion)}&valor=${v}`);
+    const necesita = ['Apostar','Bet','Subir','Raise'].includes(accion);
+    let v = 0;
+
+    if (necesita) {
+        let mensaje = '¿Cuánto?';
+        if (accion === 'Subir' || accion === 'Raise') {
+            mensaje = '¿Cuánto EXTRA deseas aumentar sobre la apuesta actual?';
+        }
+
+        const dineroDisplay = document.getElementById('dinero-jugador').textContent;
+        const maxDinero = parseInt(dineroDisplay) || 0;
+
+        const input = prompt(`${mensaje}\n(Dinero disponible: $${maxDinero})`, '100');
+        if (input === null)
+            return;
+
+        v = parseInt(input);
+        if (isNaN(v) || v <= 0) {
+            alert('Por favor, ingresa una cantidad válida.');
+            return;
+        }
+
+        if (v > maxDinero) {
+            alert(`Solo tienes $${maxDinero}. Se enviará un All-In con todo tu dinero.`);
+            v = maxDinero;
+        }
+    }
+
+    await fetch(`/api/decision?accion=${encodeURIComponent(accion)}&valor=${v}`);
+}
+
+async function enviarReinicio() {
+    votoEnviado = true;
+    document.getElementById('btn-reinicio').style.display = 'none';
+    document.getElementById('texto-espera-reinicio').style.display = 'block';
+    await fetch(`/api/decision?accion=Reinicio&valor=0`);
+}
+
+async function enviarReinicioTotal() {
+    votoEnviado = true;
+    document.getElementById('btn-reinicio').style.display = 'none';
+    document.getElementById('btn-reinicio-total').style.display = 'none';
+    document.getElementById('texto-espera-reinicio').style.display = 'block';
+    await fetch(`/api/decision?accion=ReinicioTotal&valor=0`);
 }
 
 async function iniciar()

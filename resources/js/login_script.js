@@ -11,7 +11,7 @@ document.getElementById('btn-entrar').addEventListener('click', async () => {
         const resp = await fetch(`/api/conectar?nombre=${encodeURIComponent(nombre)}`);
         if (!resp.ok) throw new Error();
 
-        window.location.href = '/mesa';   // <-- el redirect que pediste
+        window.location.href = '/mesa';
     } catch (e) {
         errorMsg.textContent = 'No se pudo conectar al servidor';
     }

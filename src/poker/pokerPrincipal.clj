@@ -28,28 +28,37 @@
     (imprimir-jugador j))
   (println "=========================================================================\n"))
 
+(defn buscar-siguiente-turno [turno-actual players]
+  (loop [i 1]
+    (if (>= i (count players))
+      turno-actual
+      (let [idx (mod (+ turno-actual i) (count players))
+            j (nth players idx)]
+        (if (:fold @j)
+          (recur (inc i))
+          idx)))))
 
 (defn avanzar-turno [m]
-  (assoc m :turn (mod (inc (:turn m)) 4)))
+  (assoc m :turn (buscar-siguiente-turno (:turn m) (:players m))))
 
-(defn aplicar-big-blind-mesa [m]
-  (assoc m :pot (+ (:pot m) 50) 
-           :current-bet 50 
-           :turn (mod (inc (:turn m)) 4)))
+(defn aplicar-big-blind-mesa [m cantidad-real]
+  (assoc m :pot (+ (:pot m) cantidad-real) 
+           :current-bet cantidad-real 
+           :turn (buscar-siguiente-turno (:turn m) (:players m))))
 
 (defn sumar-al-pozo-y-avanzar [m diferencia]
   (assoc m :pot (+ (:pot m) diferencia) 
-           :turn (mod (inc (:turn m)) 4)))
+           :turn (buscar-siguiente-turno (:turn m) (:players m))))
 
 (defn aplicar-subir-mesa [m diferencia cantidad]
   (assoc m :pot (+ (:pot m) diferencia) 
            :current-bet cantidad 
-           :turn (mod (inc (:turn m)) 4)))
+           :turn (buscar-siguiente-turno (:turn m) (:players m))))
 
-(defn aplicar-big-blind-jugador [j]
-  (assoc j :money (- (:money j) 50) 
-           :bet 50 
-           :action "BigBlind"))
+(defn aplicar-big-blind-jugador [j cantidad-real]
+  (assoc j :money (- (:money j) cantidad-real) 
+           :bet cantidad-real 
+           :action "Big Blind"))
 
 (defn aplicar-igualar-jugador [j diferencia apuesta-actual]
   (assoc j :money (- (:money j) diferencia) 
@@ -70,18 +79,16 @@
 (defn asignar-mano-inicial [estado cartas]
   (assoc estado :hand (vec cartas)))
 
-
-
 (defn jugador-activo? [j]
   (not (:fold @j)))
 
 (defn jugador-nivelado? [apuesta-maxima j]
-  (or (:fold @j) (= (:bet @j) apuesta-maxima)))
+  (or (:fold @j) 
+      (<= (:money @j) 0)
+      (>= (:bet @j) apuesta-maxima)))
 
 (defn tiene-jugada-pendiente? [j]
   (= (:action @j) ""))
-
-
 
 (defn analizar-combo [nombre-jugador combo]
   (let [frec (frequencies (map :rank combo))
@@ -101,8 +108,6 @@
         manos-formateadas (for [c todos-combos] (analizar-combo nombre c))]
     (last (sort-by criterio-poker manos-formateadas))))
 
-
-
 (defn ejecutar-big-blind [jugador mesa-ag]
   (send jugador aplicar-big-blind-jugador)
   (send mesa-ag aplicar-big-blind-mesa))
@@ -110,19 +115,25 @@
 (defn ejecutar-igualar [jugador mesa-ag]
   (let [apuesta-actual (:current-bet @mesa-ag)
         p-bet (:bet @jugador)
-        diferencia (- apuesta-actual p-bet)]
-    (send jugador aplicar-igualar-jugador diferencia apuesta-actual)
-    (send mesa-ag sumar-al-pozo-y-avanzar diferencia)))
+        diferencia (- apuesta-actual p-bet)
+        diferencia-real (min diferencia (:money @jugador))]
+    
+    (send jugador aplicar-igualar-jugador diferencia-real apuesta-actual)
+    (send mesa-ag sumar-al-pozo-y-avanzar diferencia-real)))
 
 (defn ejecutar-pasar [jugador mesa-ag]
   (send jugador assoc :action "Pasar")
   (send mesa-ag avanzar-turno))
 
-(defn ejecutar-subir [jugador mesa-ag cantidad]
-  (let [p-bet (:bet @jugador)
-        diferencia (- cantidad p-bet)]
-    (send jugador aplicar-subir-jugador diferencia cantidad)
-    (send mesa-ag aplicar-subir-mesa diferencia cantidad)))
+(defn ejecutar-subir [jugador mesa-ag cantidad-extra]
+  (let [apuesta-actual (:current-bet @mesa-ag)
+        p-bet (:bet @jugador)
+        nueva-apuesta (+ apuesta-actual cantidad-extra)
+        diferencia (- nueva-apuesta p-bet)
+        diferencia-real (min diferencia (:money @jugador))]
+    
+    (send jugador aplicar-subir-jugador diferencia-real nueva-apuesta)
+    (send mesa-ag aplicar-subir-mesa diferencia-real nueva-apuesta)))
 
 (defn ejecutar-retirarse [jugador mesa-ag]
   (send jugador assoc :action "Retirarse" :fold true)
@@ -165,7 +176,6 @@
   
   (await mesa-ag))
 
-
 (defn barajar-cartas-iniciales [mesa-ag]
   (let [players (:players @mesa-ag)
         mazo-barajado (shuffle cartas/game-cards)
@@ -193,16 +203,29 @@
     (send fase-actual (fn [_] :pre-flop))
     (await mazo-restante fase-actual)
 
-    (ejecutar-big-blind (first players) mesa-ag)
-    (await (first players) mesa-ag)))
+    (send mesa-ag assoc :turn (buscar-siguiente-turno -1 (:players @mesa-ag)))
+    (await mesa-ag)
+
+    (let [idx-turno (:turn @mesa-ag)
+          jugador-bb (nth (:players @mesa-ag) idx-turno)
+          dinero-disponible (:money @jugador-bb)
+          bb-real (min 50 dinero-disponible)]
+      
+      (send jugador-bb aplicar-big-blind-jugador bb-real)
+      (send mesa-ag aplicar-big-blind-mesa bb-real)
+      (await jugador-bb mesa-ag))))
 
 (defn showdown [mesa-ag]
   (let [players (:players @mesa-ag)
         finalistas (filter jugador-activo? players)
         resultados (map evaluar-mejor-mano finalistas)
         ganador (last (sort-by criterio-poker resultados))
+        ganador-ag (first (filter #(= (:name @%) (:jugador ganador)) finalistas))
         pozo-final (:pot @mesa-ag)]
     (println "         SHOWDOWN - EVALUACIÓN FINAL         ")
+
+    (send ganador-ag update :money + pozo-final)
+    (await ganador-ag)
 
     (println "\n¡¡EL GANADOR ES:" (:jugador ganador) "con un" (:type (:rank-type ganador)) "!!")
 
@@ -254,6 +277,8 @@
         (let [ganador (first activos)]
 
           (println "\n¡¡PARTIDA FINALIZADA POR ABANDONO!!")
+          (send ganador update :money + (:pot @mesa-ag))
+          (await ganador)
           (send mesa-ag assoc :ganador {:nombre (:name @ganador)
                                         :jugada nil
                                         :pozo (:pot @mesa-ag)
@@ -267,3 +292,43 @@
 
     (let [opciones (obtener-opciones jugador-actual mesa-ag)]
       (println "Opciones válidas:" opciones))))
+
+(defn procesar-reinicio [mesa-ag player-id]
+  (send mesa-ag update :votos-reinicio (fnil conj #{}) player-id)
+  (await mesa-ag)
+  (when (= 4 (count (:votos-reinicio @mesa-ag)))
+    (doseq [j (:players @mesa-ag)]
+      (let [sin-dinero? (<= (:money @j) 0)]
+        (send j assoc 
+              :hand [] 
+              :bet 0 
+              :action (if sin-dinero? "ELIMINADO" "") 
+              :fold sin-dinero?)))
+
+    (send mesa-ag assoc 
+          :pot 0
+          :community-cards []
+          :current-bet 0
+          :ganador nil
+          :ronda 0
+          :votos-reinicio #{})
+    (await mesa-ag)
+    (barajar-cartas-iniciales mesa-ag)))
+
+(defn procesar-reinicio-total [mesa-ag player-id]
+  (send mesa-ag update :votos-reinicio (fnil conj #{}) player-id)
+  (await mesa-ag)
+  
+  (when (= 4 (count (:votos-reinicio @mesa-ag)))
+    (doseq [j (:players @mesa-ag)]
+      (send j assoc :hand [] :bet 0 :action "" :fold false :money 1000))
+    
+    (send mesa-ag assoc 
+          :pot 0
+          :community-cards []
+          :current-bet 0
+          :ganador nil
+          :ronda 0
+          :votos-reinicio #{})
+    (await mesa-ag)
+    (barajar-cartas-iniciales mesa-ag)))
