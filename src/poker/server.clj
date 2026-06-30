@@ -25,14 +25,6 @@
 
 (defn carta-str [c] (str (rank-str (:rank c)) (tipo-str (:tipo c))))
 
-;;(defn jugador-json [j viewer-id]
-;;  {:id (:id @j)
-;;   :nombre (:name @j)
-;;   :dinero (:money @j)
-;;   :cartas (if (= (:id @j) viewer-id)
-;;             (mapv carta-str (:hand @j))
-;;             (vec (repeat (count (:hand @j)) "back")))})
-
 (defn jugador-json [j viewer-id]
   {:id (:id @j)
    :nombre (:name @j)
@@ -67,7 +59,6 @@
   (update estado :players conj (apuestas/crear-jugador nombre id)))
 
 (defn register_client [socket nombre]
-  ;; add socket to agent
   (send active_clients assoc socket (count @active_clients))
   (await active_clients)
   
@@ -88,9 +79,8 @@
 (defn on-mensaje-recibido [player-id action value]
   (when (:armada? @mesa-ag)
     (cond
-      ;; catch restart types
       (= action "Reinicio") (motor/procesar-reinicio mesa-ag player-id)
-      (= action "ReinicioTotal") (motor/procesar-reinicio-total mesa-ag player-id) ;; <-- NUEVO
+      (= action "ReinicioTotal") (motor/procesar-reinicio-total mesa-ag player-id)
       :else
       (let [cantidad (when value (Integer/parseInt value))]
         (motor/procesar-accion-jugador mesa-ag action cantidad)))))
@@ -122,10 +112,7 @@
      :headers {"Content-Type" "text/plain"}
      :body "Active server"}))
 
-
 (defn -main [& args]
-  (let [server (hk-server/run-server app {:port 8080})]
-    (println "Running on port 8080")
-    (println "Enter to stop...")
-    (read-line)
-    (server)))
+  (let [port (if (seq args) (Integer/parseInt (first args)) 8080)]
+    (println "Servidor de Poker corriendo en el puerto" port)
+    (hk-server/run-server app {:port port :host "0.0.0.0"})))
